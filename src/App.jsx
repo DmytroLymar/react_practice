@@ -112,8 +112,13 @@ export const Filters = ({
   search,
   onSearchChange,
   onReset,
+  categories,
+  selectedCategories,
+  onCategorySelect,
 }) => {
-  const isAll = selectedUserId === null;
+  const isAllUsers = selectedUserId === null;
+  const isAllCategories = selectedCategories.length === 0;
+
   return (
     <div className="block">
       <nav className="panel">
@@ -123,9 +128,9 @@ export const Filters = ({
           <a
             data-cy="FilterAllUsers"
             href="#/"
-            className={cn({ 'is-active': isAll })}
+            className={cn({ 'is-active': isAllUsers })}
             onClick={() => {
-              if (!isAll) {
+              if (!isAllUsers) {
                 onUserSelect(null);
               }
             }}
@@ -135,6 +140,7 @@ export const Filters = ({
 
           {users.map(user => {
             const isSelected = selectedUserId === user.id;
+
             return (
               <a
                 key={user.id}
@@ -179,25 +185,28 @@ export const Filters = ({
           <a
             href="#/"
             data-cy="AllCategories"
-            className="button is-success mr-6 is-outlined"
+            className={cn('button is-success mr-6', {
+              'is-outlined': !isAllCategories,
+            })}
+            onClick={() => onCategorySelect(null)}
           >
             All
           </a>
 
-          <a data-cy="Category" className="button mr-2 my-1 is-info" href="#/">
-            Category 1
-          </a>
-
-          <a data-cy="Category" className="button mr-2 my-1" href="#/">
-            Category 2
-          </a>
-
-          <a data-cy="Category" className="button mr-2 my-1 is-info" href="#/">
-            Category 3
-          </a>
-          <a data-cy="Category" className="button mr-2 my-1" href="#/">
-            Category 4
-          </a>
+          {categories.map(c => {
+            const isSelected = selectedCategories.includes(c.id);
+            return (
+              <a
+                key={c.id}
+                data-cy="Category"
+                className={cn('button mr-2 my-1', { 'is-info': isSelected })}
+                href="#/"
+                onClick={() => onCategorySelect(c.id)}
+              >
+                {c.title}
+              </a>
+            );
+          })}
         </div>
 
         <div className="panel-block">
@@ -227,9 +236,14 @@ const prepareProducts = (
 
   if (search) {
     const normalizedSearch = search.trim().toLowerCase();
+
     prepared = prepared.filter(p =>
       p.name.toLowerCase().includes(normalizedSearch),
     );
+  }
+
+  if (selectedCategories.length > 0) {
+    prepared = prepared.filter(p => selectedCategories.includes(p.category.id));
   }
 
   return prepared;
@@ -254,6 +268,18 @@ export const App = () => {
     setSelectedCategories([]);
   };
 
+  const onCategorySelect = categoryId => {
+    if (categoryId === null) {
+      setSelectedCategories([]);
+      return;
+    }
+    setSelectedCategories(prev =>
+      prev.includes(categoryId)
+        ? prev.filter(c => c !== categoryId)
+        : [...prev, categoryId],
+    );
+  };
+
   const preparedProducts = prepareProducts(buildedProducts, {
     selectedUserId,
     search,
@@ -271,6 +297,9 @@ export const App = () => {
           search={search}
           onSearchChange={onSearchChange}
           onReset={onReset}
+          categories={categoriesFromServer}
+          selectedCategories={selectedCategories}
+          onCategorySelect={onCategorySelect}
         />
         <div className="box table-container">
           <ProductTable products={preparedProducts} />
