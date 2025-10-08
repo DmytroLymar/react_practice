@@ -65,9 +65,7 @@ export const ProductTable = ({
           {columns.map(c => {
             const isSelected = sortField === c.field;
             const isAsc = sortOrder === 'asc';
-            console.log(c.field);
-            console.log(sortField);
-            console.log(sortOrder);
+
             return (
               <th key={c.title}>
                 <span className="is-flex is-flex-wrap-nowrap">
@@ -254,6 +252,7 @@ const prepareProducts = (
     prepared.sort((p1, p2) => {
       const dir = sortOrder === 'asc' ? 1 : -1;
       let sort;
+
       switch (sortField) {
         case 'productId':
           sort = p1.id - p2.id;
@@ -270,6 +269,7 @@ const prepareProducts = (
         default:
           sort = 0;
       }
+
       return sort * dir;
     });
   }
@@ -316,13 +316,11 @@ export const App = () => {
     if (field !== sortField) {
       setSortField(field);
       setSortOrder('asc');
+    } else if (sortOrder === 'asc') {
+      setSortOrder('desc');
     } else {
-      if (sortOrder === 'asc') {
-        setSortOrder('desc');
-      } else {
-        setSortField(null);
-        setSortOrder('asc');
-      }
+      setSortField(null);
+      setSortOrder('asc');
     }
   };
 
