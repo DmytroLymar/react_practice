@@ -99,16 +99,14 @@ export const ProductTable = ({
 };
 
 export const Filters = ({
-  users,
-  selectedUserId,
-  onUserSelect,
-  search,
-  onSearchChange,
+  userFilters,
+  categoryFilters,
+  searchProps,
   onReset,
-  categories,
-  selectedCategories,
-  onCategorySelect,
 }) => {
+  const { users, selectedUserId, onUserSelect } = userFilters;
+  const { categories, selectedCategories, onCategorySelect } = categoryFilters;
+  const { search, onSearchChange } = searchProps;
   const isAllUsers = selectedUserId === null;
   const isAllCategories = selectedCategories.length === 0;
 
@@ -335,15 +333,14 @@ export const App = () => {
       <div className="container">
         <h1 className="title">Product Categories</h1>
         <Filters
-          users={usersFromServer}
-          selectedUserId={selectedUserId}
-          onUserSelect={onUserSelect}
-          search={search}
-          onSearchChange={onSearchChange}
+          userFilters={{ users: usersFromServer, selectedUserId, onUserSelect }}
+          categoryFilters={{
+            categories: categoriesFromServer,
+            selectedCategories,
+            onCategorySelect,
+          }}
+          searchProps={{ search, onSearchChange }}
           onReset={onReset}
-          categories={categoriesFromServer}
-          selectedCategories={selectedCategories}
-          onCategorySelect={onCategorySelect}
         />
         <div className="box table-container">
           <ProductTable
