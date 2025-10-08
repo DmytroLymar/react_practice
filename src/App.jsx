@@ -36,7 +36,19 @@ export const Product = ({ product }) => {
   );
 };
 
-export const ProductTable = ({ products }) => {
+export const ProductTable = ({
+  products,
+  sortField,
+  sortOrder,
+  onSortField,
+}) => {
+  const columns = [
+    { title: 'ID', field: 'productId' },
+    { title: 'Product', field: 'productName' },
+    { title: 'Category', field: 'categoryTitle' },
+    { title: 'User', field: 'userName' },
+  ];
+
   if (products.length === 0) {
     return (
       <p data-cy="NoMatchingMessage">No products matching selected criteria</p>
@@ -50,49 +62,32 @@ export const ProductTable = ({ products }) => {
     >
       <thead>
         <tr>
-          <th>
-            <span className="is-flex is-flex-wrap-nowrap">
-              ID
-              <a href="#/">
-                <span className="icon">
-                  <i data-cy="SortIcon" className="fas fa-sort" />
+          {columns.map(c => {
+            const isSelected = sortField === c.field;
+            const isAsc = sortOrder === 'asc';
+            console.log(c.field);
+            console.log(sortField);
+            console.log(sortOrder);
+            return (
+              <th key={c.title}>
+                <span className="is-flex is-flex-wrap-nowrap">
+                  {c.title}
+                  <a href="#/" onClick={() => onSortField(c.field)}>
+                    <span className="icon">
+                      <i
+                        data-cy="SortIcon"
+                        className={cn('fas', {
+                          'fa-sort': !isSelected,
+                          'fa-sort-up': isSelected && isAsc,
+                          'fa-sort-down': isSelected && !isAsc,
+                        })}
+                      />
+                    </span>
+                  </a>
                 </span>
-              </a>
-            </span>
-          </th>
-
-          <th>
-            <span className="is-flex is-flex-wrap-nowrap">
-              Product
-              <a href="#/">
-                <span className="icon">
-                  <i data-cy="SortIcon" className="fas fa-sort-down" />
-                </span>
-              </a>
-            </span>
-          </th>
-
-          <th>
-            <span className="is-flex is-flex-wrap-nowrap">
-              Category
-              <a href="#/">
-                <span className="icon">
-                  <i data-cy="SortIcon" className="fas fa-sort-up" />
-                </span>
-              </a>
-            </span>
-          </th>
-
-          <th>
-            <span className="is-flex is-flex-wrap-nowrap">
-              User
-              <a href="#/">
-                <span className="icon">
-                  <i data-cy="SortIcon" className="fas fa-sort" />
-                </span>
-              </a>
-            </span>
-          </th>
+              </th>
+            );
+          })}
         </tr>
       </thead>
 
@@ -176,7 +171,14 @@ export const Filters = ({
 
             <span className="icon is-right">
               {/* eslint-disable-next-line jsx-a11y/control-has-associated-label */}
-              <button data-cy="ClearButton" type="button" className="delete" />
+              {search !== '' && (
+                <button
+                  data-cy="ClearButton"
+                  type="button"
+                  className="delete"
+                  onClick={() => onSearchChange('')}
+                />
+              )}
             </span>
           </p>
         </div>
@@ -195,6 +197,7 @@ export const Filters = ({
 
           {categories.map(c => {
             const isSelected = selectedCategories.includes(c.id);
+
             return (
               <a
                 key={c.id}
@@ -227,6 +230,7 @@ export const Filters = ({
 const prepareProducts = (
   products,
   { selectedUserId, search, selectedCategories },
+  { sortField, sortOrder },
 ) => {
   let prepared = [...products];
 
@@ -246,6 +250,30 @@ const prepareProducts = (
     prepared = prepared.filter(p => selectedCategories.includes(p.category.id));
   }
 
+  if (sortField !== null) {
+    prepared.sort((p1, p2) => {
+      const dir = sortOrder === 'asc' ? 1 : -1;
+      let sort;
+      switch (sortField) {
+        case 'productId':
+          sort = p1.id - p2.id;
+          break;
+        case 'productName':
+          sort = p1.name.localeCompare(p2.name);
+          break;
+        case 'categoryTitle':
+          sort = p1.category.title.localeCompare(p2.category.title);
+          break;
+        case 'userName':
+          sort = p1.user.name.localeCompare(p2.user.name);
+          break;
+        default:
+          sort = 0;
+      }
+      return sort * dir;
+    });
+  }
+
   return prepared;
 };
 
@@ -253,6 +281,8 @@ export const App = () => {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [search, setSearch] = useState('');
   const [selectedCategories, setSelectedCategories] = useState([]);
+  const [sortField, setSortField] = useState(null);
+  const [sortOrder, setSortOrder] = useState('asc');
 
   const onUserSelect = userId => {
     setSelectedUserId(userId);
@@ -271,8 +301,10 @@ export const App = () => {
   const onCategorySelect = categoryId => {
     if (categoryId === null) {
       setSelectedCategories([]);
+
       return;
     }
+
     setSelectedCategories(prev =>
       prev.includes(categoryId)
         ? prev.filter(c => c !== categoryId)
@@ -280,11 +312,25 @@ export const App = () => {
     );
   };
 
-  const preparedProducts = prepareProducts(buildedProducts, {
-    selectedUserId,
-    search,
-    selectedCategories,
-  });
+  const onSortField = field => {
+    if (field !== sortField) {
+      setSortField(field);
+      setSortOrder('asc');
+    } else {
+      if (sortOrder === 'asc') {
+        setSortOrder('desc');
+      } else {
+        setSortField(null);
+        setSortOrder('asc');
+      }
+    }
+  };
+
+  const preparedProducts = prepareProducts(
+    buildedProducts,
+    { selectedUserId, search, selectedCategories },
+    { sortField, sortOrder },
+  );
 
   return (
     <div className="section">
@@ -302,7 +348,12 @@ export const App = () => {
           onCategorySelect={onCategorySelect}
         />
         <div className="box table-container">
-          <ProductTable products={preparedProducts} />
+          <ProductTable
+            products={preparedProducts}
+            sortField={sortField}
+            sortOrder={sortOrder}
+            onSortField={onSortField}
+          />
         </div>
       </div>
     </div>
